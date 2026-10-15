@@ -42,6 +42,5 @@ jobs:
         run: |
           gh release create $env:GITHUB_REF_NAME `
             ".\dist\MemoSticker.exe" `
-            ".\dist\MemoSticker.exe.sha256" `
             --title "메모 스티커 $env:GITHUB_REF_NAME" `
             --generate-notes
