@@ -1,0 +1,47 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install build dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Verify tag and app version
+        shell: pwsh
+        run: |
+          $tagVersion = $env:GITHUB_REF_NAME.TrimStart('v')
+          $appVersion = python -c "from memo_widget.version import APP_VERSION; print(APP_VERSION)"
+          if ($tagVersion -ne $appVersion) {
+            throw "Tag version $tagVersion does not match APP_VERSION $appVersion"
+          }
+
+      - name: Build portable executable
+        shell: pwsh
+        run: .\build_release.ps1
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME `
+            ".\dist\MemoSticker.exe" `
+            ".\dist\MemoSticker.exe.sha256" `
+            --title "메모 스티커 $env:GITHUB_REF_NAME" `
+            --generate-notes
